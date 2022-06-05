@@ -1,0 +1,42 @@
+---
+name: Test
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+  push:
+    branches-ignore:
+      - main
+
+  workflow_call:
+
+jobs:
+  test:
+    name: Test script and action
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: lint good file
+        id: should_pass
+        uses: ./
+        with:
+          dockerfile: ./test/Dockerfile.good
+
+      - name: lint bad file
+        id: should_fail
+        continue-on-error: true
+        uses: ./
+        with:
+          dockerfile: ./test/Dockerfile.bad
+
+      - name: fail on bad lint pass or good lint fail
+        if: steps.should_fail.outcome == 'success' || steps.should_pass.outcome != 'success'
+        run: exit 1
+
